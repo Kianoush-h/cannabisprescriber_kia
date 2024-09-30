@@ -1,0 +1,1016 @@
+<!doctype html>
+<html lang="en" class="full-height">
+
+<head>
+    <title>--==[ HC ]==--</title>
+    <link rel="icon" type="image/png" href="material-kit/assets/img/favicon.png">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <!-- Fonts and icons -->
+    <link rel="stylesheet" type="text/css"
+        href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Roboto+Slab:400,700|Material+Icons" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css">
+    <!-- Material Kit CSS -->
+    <link href="material-kit/assets/css/material-kit.css?v=2.2.0" rel="stylesheet" />
+    <style>
+        .full-height {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .fill-height {
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        .alert-doctor {
+            color: #114e7e;
+            background-color: #e8f8ff;
+        }
+
+        ::placeholder {
+            color: #80a0ff80;
+        }
+    </style>
+
+    <!-- Mock data -->
+    <script>
+        goji_info = {
+            "name": "goji Tech",
+            "photo": "material-kit/assets/gojitech_logo2.png",
+        }
+
+
+        hcData = {
+            "Demographics": {
+                "lastName": "Haratiannejadi",
+                "firstName": "Kianoush",
+                "dob": "April 20, 1970 (49)",
+                "gender": "Male",
+                "identifiesAs": "He/Him",
+                "weight": "84.3 kgs (186 lbs)",
+                "height": "178 cm (5' 10\")",
+                "photo": "material-kit/assets/img/OntDriversLicense.jpg",
+                "conditions": [
+                    " Osteoarthritis",
+                    " Insomnia",
+                    " Hypertension",
+                ],
+                "contraindications": [
+                    "Percocet 2012-2014",
+                ],
+            },
+            "Clinical": {
+                "prescribingHCP": "Dr. Mary Smith",
+                "clinic": "Wise Elephant FHT",
+                "prescriptions": {
+                    "strain": ["Sativa", "Hybrid"],
+                    "format": ["dried", "oil", "edible"],
+                    "cbdPercent": "5",
+                    "thcPercent": "25",
+                    "gramsPerDay": "1",
+                    "duration": "30",
+                },
+            },
+            "orderHx": [
+                { "product": "10:10 Balance oil", "orderDate": "August 27, 2018", "instructions": "Take 3 drops 1 hr before bed.", "cost": "$172.00" },
+                { "product": "10:10 Balance oil", "orderDate": "September 26, 2018", "instructions": "Take 5 drops 1 hr before bed. Mix into tea.", "cost": "$172.00" },
+                { "product": "10:10 Balance oil", "orderDate": "October 25, 2018", "instructions": "Take 6 drops 1 hr before bed. Mix into tea.", "cost": "$258.00" },
+                { "product": "10:10 Balance oil", "orderDate": "December 28, 2018", "instructions": "Take 6 drops 1 hr before bed. Mix into tea.", "cost": "$516.00" },
+                { "product": "5:20 CBD oil", "orderDate": "April 14, 2019", "instructions": "Take 6 drops 1 hr before bed. Mix into tea.", "cost": "$86.00" },
+                { "product": "1:25 CBD oil", "orderDate": "May 24, 2019", "instructions": "Take 6 drops 1 hr before bed. Mix into tea.", "cost": "$92.00" },
+                { "product": "1:25 CBD oil", "orderDate": "June 26, 2019", "instructions": "Take 6 drops 1 hr before bed. Mix into tea.", "cost": "$276.00" },
+                { "product": "1:25 CBD oil", "orderDate": "September 29, 2019", "instructions": "Take 6 drops 1 hr before bed. Mix into tea.", "cost": "$276.00" }
+            ]
+        }
+
+        //Special case where a is in local time and b is in UTC
+        function dateDiffInDays(a, b) {
+            // Discard the time and time-zone information.
+            b = new Date(b.getTime() + tday.getTimezoneOffset() * 60000); //Since b's TZ is not specified it will be treated as UTC, we have to add the offset to get it to local time so that when it's converted to UTC it does not slide back a day.
+            const utc1 = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+            const utc2 = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+            return Math.floor((utc2 - utc1) / 86400000);    //milliseconds in a day (1000*60*60*24)
+        }
+
+        //Add/subtract # days to a given date
+        Date.prototype.addDays = function (days) {
+            var date = new Date(this.valueOf());
+            date.setDate(date.getDate() + days);
+            return date;
+        }
+
+        hcConfig = {
+            "inventoryMinDays": 3,
+            "inventorySafeDays": 7,
+            "maxCBD": 40,
+            "maxTHC": 50,
+            "conditions": ["Insomnia", "Anxiety", "Depression", "Pain", "PTSD", "Nausea", "Anorexia", "Cancer", "HIV/AIDS", "Alzheimer`s", "Crohn`s", "Epilepsy"],
+        }
+        hcConfig.conditions.sort();
+
+        const tday = new Date();
+        const minDaysGreenInventory = hcConfig.inventorySafeDays;    // 3-7 days and inventory will appear yellow (warning colour)
+        const minDaysYellowInventory = hcConfig.inventoryMinDays;   // <3 days and inventory will appear red (critical colour)
+        const maxCBD = hcConfig.maxCBD;
+        const maxTHC = hcConfig.maxTHC;
+
+        var tabledata = [
+            // { id: 1, name: "Bob Marley Special", lp: "Aurora", strain: "Indica", cbd: "5", thc: "30", format: "dried", rating: "4.5", inventoryExpiry: "2020-01-17", unitPrice: "12.95", units: "g", terepen: "Myrcene" },
+            // { id: 2, name: "Purple Kush", lp: "Aurora", strain: "Sativa", cbd: "10", thc: 20, format: "edible", rating: "4.2", inventoryExpiry: "2020-01-28", unitPrice: "4.20", units: "bottle", terepen: "Caryophyllene" },
+            // { id: 3, name: "CBD Drops", lp: "Aurora", strain: "Hyrbrid", cbd: 0.8, thc: "22-30", format: "oil", rating: "4.1", inventoryExpiry: "2020-01-29", unitPrice: "6.95", units: "g", terepen: "Pinene" },
+            // { id: 4, name: "Raspberry THC Gummies", lp: "Aurora", strain: "Indica", cbd: 0, thc: 2, format: "edible", rating: "2", inventoryExpiry: "2020-01-26", unitPrice: "4.20", units: "g", terepen: "limonene" },
+            // { id: 5, name: "Aurora THC Drops", lp: "Aurora", strain: "Sativa", cbd: 0, thc: 27, format: "oil", rating: "4.2", inventoryExpiry: "2020-02-25", unitPrice: "4.20", units: "g", terepen: "Pinene" },
+            // { id: 6, name: "Ambition", lp: "Aurora", strain: "Hybrid", cbd: 1, thc: 1, format: "dried", rating: "4.2", inventoryExpiry: "2020-02-22", unitPrice: "4.20", units: "g", terepen: "Myrcene" },
+            // { id: 7, name: "Marley Natural", lp: "Aurora", strain: "Indica", cbd: 40, thc: 40, format: "dried", rating: "4.2", inventoryExpiry: "2020-01-21", unitPrice: "5.00", units: "g", terepen: "Pinene" },
+            // { id: 8, name: "Apothecanna", lp: "Aurora", strain: "Indica", cbd: 2, thc: 2, format: "dried", rating: "4.2", inventoryExpiry: "2020-01-22", unitPrice: "8.88", units: "g", terepen: "limonene" },
+            // { id: 9, name: "Caviar Gold", lp: "MM", strain: "Sativa", cbd: 3, thc: 3, format: "dried", rating: "4.2", inventoryExpiry: "2020-01-23", unitPrice: "9.99", units: "g", terepen: "limonene" },
+            // { id: 10, name: "Willie's Reserve", lp: "MM", strain: "Sativa", cbd: 4, thc: 4, format: "dried", rating: "4.2", inventoryExpiry: "2020-01-24", unitPrice: "11.20", units: "g", terepen: "Terpinolene" },
+            // { id: 11, name: "Afghan", lp: "MM", strain: "Hybrid", cbd: 5, thc: 5, format: "dried", rating: "4.2", inventoryExpiry: "2020-02-23", unitPrice: "11.20", units: "g", terepen: "Humulene" },
+            // { id: 12, name: "Funky Monkey", lp: "MM", strain: "Hybrid", cbd: 40, thc: 25, format: "dried", rating: "4.2", inventoryExpiry: "2020-02-24", unitPrice: "5.01", units: "g", terepen: "Linalool" },
+            // { id: 13, name: "Blackwater", lp: "MM", strain: "Hybrid", cbd: 3, thc: 3, format: "oil", rating: "4.2", inventoryExpiry: "2020-01-23", unitPrice: "11.20", units: "g", terepen: "Ocimene" },
+            // { id: 14, name: "Blueberry", lp: "MM", strain: "Hybrid", cbd: 4, thc: 4, format: "capsule", rating: "4.6", inventoryExpiry: "2020-01-25", unitPrice: "11.20", units: "g", terepen: "Nerolidol" },
+            // { id: 15, name: "Dynamite", lp: "MM", strain: "Sativa", cbd: 5, thc: 5, format: "edible", rating: "4.5", inventoryExpiry: "2020-02-26", unitPrice: "14.95", units: "g", terepen: "Linalool" },
+            // { id: 16, name: "Edelweiss", lp: "MM", strain: "Sativa", cbd: 15, thc: 50, format: "oil", rating: "4.0", inventoryExpiry: "2020-02-27", unitPrice: "11.20", units: "g", terepen: "Humulene" },
+            // { id: 17, name: "Kryptonite", lp: "MM", strain: "Indica", cbd: 3, thc: 30, format: "capsule", rating: "4.1", inventoryExpiry: "2020-01-28", unitPrice: "11.20", units: "g", terepen: "Bisabolol" },
+            // { id: 18, name: "Lions Gate", lp: "MM", strain: "Indica", cbd: 40, thc: 4, format: "oil", rating: "4.2", inventoryExpiry: "2020-01-29", unitPrice: "11.20", units: "g", terepen: "Nerolidol" },
+            // { id: 19, name: "Mango", lp: "MM", strain: "Indica", cbd: 5, thc: 15, format: "vape", rating: "4.3", inventoryExpiry: "2020-02-28", unitPrice: "11.20", units: "g", terepen: "Pinene" },
+            // { id: 20, name: "Midnight", lp: "MedReleaf", strain: "Sativa", cbd: 8, thc: 6, format: "dried", rating: "4.1", inventoryExpiry: "2020-02-27", unitPrice: "20.00", units: "g", terepen: "Caryophyllene" },
+
+            { id: 21, name: "CanniMed 1.13 - Cannimed", lp: "Cannimed", strain: "Hybrid", cbd: 10, thc: 0, pin: 99699848, format: "dried", rating: 3.4, inventoryExpiry: "", unitPrice: "7.00", units: "g", "terepen": "" },
+            { id: 22, name: "CanniMed 9:9 - Cannimed", lp: "Cannimed", strain: "Hybrid", cbd: 7, thc: 7, pin: 99699841, format: "dried", rating: 3.4, inventoryExpiry: "", unitPrice: "7.50", units: "g", "terepen": "" },
+            { id: 23, name: "CanniMed 12:0 - Cannimed", lp: "Cannimed", strain: "Hybrid", cbd: 0, thc: 10, pin: "", format: "dried", rating: 3.9, inventoryExpiry: "", unitPrice: "7.50", units: "g", "terepen": "" },
+            { id: 24, name: "CanniMed 17:1 - Cannimed", lp: "Cannimed", strain: "Hybrid", cbd: 0, thc: 13, pin: "", format: "dried", rating: 3, inventoryExpiry: "", unitPrice: "8.00", units: "g", "terepen": "" },
+            { id: 25, name: "CanniMed 22:1 - Cannimed", lp: "Cannimed", strain: "Hybrid", cbd: 0, thc: 16, pin: 99699842, format: "dried", rating: 3.6, inventoryExpiry: "", unitPrice: "8.50", units: "g", "terepen": "" },
+            { id: 26, name: "Avidekel - MedReleaf", lp: "MedReleaf", strain: "Indica", cbd: 11, thc: 0, pin: "", format: "dried", rating: 3.3, inventoryExpiry: "", unitPrice: "11.20", units: "g", "terepen": "" },
+            { id: 27, name: "Midnight - MedReleaf", lp: "MedReleaf", strain: "Sativa", cbd: "8-12%", thc: "6-10.4%", pin: 99699846, format: "dried", rating: 4.1, inventoryExpiry: "", unitPrice: "11.80", units: "g", "terepen": "Caryophyllene" },
+            { id: 28, name: "Sedamen - MedReleaf", lp: "MedReleaf", strain: "Indica", cbd: 0, thc: 17, pin: "", format: "dried", rating: 5, inventoryExpiry: "", unitPrice: "12.60", units: "g", "terepen": "" },
+            { id: 29, name: "Bubba Kush Oil - 30ml", lp: "Aurora", strain: "Indica", cbd: 0, thc: 25, pin: 99699845, format: "oil", rating: 4, inventoryExpiry: "", unitPrice: "110.00", units: "bottle", "terepen": "" },
+            { id: 30, name: "Bubba Kush Oil - 60ml", lp: "Aurora", strain: "Indica", cbd: 0, thc: 25, pin: "", format: "oil", rating: 4, inventoryExpiry: "", unitPrice: "180.00", units: "bottle", "terepen": "" },
+            { id: 31, name: "High CBDa Oil - 30mL", lp: "Aurora", strain: "Indica", cbd: 5, thc: 0, pin: 99699847, format: "oil", rating: 2, inventoryExpiry: "", unitPrice: "75.00", units: "bottle", "terepen": "" },
+            { id: 32, name: "Avidekel Oil - 40mL - MedReleaf", lp: "MedReleaf", strain: "Indica", cbd: 22, thc: 2, pin: 99699843, format: "oil", rating: 1, inventoryExpiry: "", unitPrice: "150.00", units: "bottle", "terepen": "" },
+            { id: 33, name: "Avidekel - 25 Softgels - MedReleaf", lp: "MedReleaf", strain: "Indica", cbd: 17, thc: 1, pin: "", format: "capsule", rating: 4, inventoryExpiry: "", unitPrice: "90.00", units: "bottle", "terepen": "" },
+            { id: 34, name: "Midnight - 100 Softgels - MedReleaf", lp: "MedReleaf", strain: "Sativa", cbd: 2, thc: 2, pin: "", format: "capsule", rating: 4, inventoryExpiry: "", unitPrice: "75.00", units: "bottle", "terepen": "" },
+            { id: 35, name: "Cannimed 3:3 - 60 Count - Cannimed", lp: "Cannimed", strain: "Hybrid", cbd: 3, thc: 3, pin: "", format: "capsule", rating: 1, inventoryExpiry: "", unitPrice: "55.00", units: "bottle", "terepen": "" },
+            { id: 36, name: "Trutiva Softgels - 25 Capsules - MedReleaf", lp: "MedReleaf", strain: "Sativa", cbd: 19, thc: 1, pin: 99699844, format: "capsule", rating: 5, inventoryExpiry: "", unitPrice: "75.00", units: "bottle", "terepen": "" },
+            { id: 37, name: "510 Vape - CBD - Aurora", lp: "Aurora", strain: "Hybrid", cbd: 62, thc: 21, pin: "", format: "vape", rating: 2, inventoryExpiry: "", unitPrice: "59.00", units: "Cartridge", "terepen": "" },
+            { id: 38, name: "510 Vape - Indica - Aurora", lp: "Aurora", strain: "Indica", cbd: 0, thc: 72, pin: "", format: "vape", rating: 4, inventoryExpiry: "", unitPrice: "45.00", units: "Cartridge", "terepen": "" },
+            { id: 39, name: "Rex 510 Vape - MedReleaf", lp: "MedReleaf", strain: "Sativa", cbd: 2, thc: 68, pin: "", format: "vape", rating: 2, inventoryExpiry: "", unitPrice: "55.96", units: "Cartridge", "terepen": "" },
+            { id: 40, name: "Peach CBD Gummies - Aurora", lp: "Aurora", strain: "Hybrid", cbd: 10, thc: 0, pin: "", format: "edible", rating: 1, inventoryExpiry: "", unitPrice: "15.00", units: "5-pack", "terepen": "" },
+            { id: 41, name: "THC Peppermints - Aurora", lp: "Aurora", strain: "Hybrid", cbd: 0, thc: 2, pin: "", format: "edible", rating: 3, inventoryExpiry: "", unitPrice: "7.00", units: "5-pack", "terepen": "" },
+            { id: 42, name: "Grape THC Gummies - Aurora", lp: "Aurora", strain: "Indica", cbd: 0, thc: 2, pin: "", format: "edible", rating: 1, inventoryExpiry: "", unitPrice: "6.00", units: "5-pack", "terepen": "" },
+
+        ];
+        //Product table hygiene: transform/normalize data into presentation format
+        for (var i = 0; i < tabledata.length; i++) {
+            //randomly set the exptected inventory depletion date to -14d ... +30d from today
+            tabledata[i]["inventoryExpiry"] = tday.addDays(Math.floor(Math.random() * 45) - 14).toISOString().slice(0, 10);
+            if (tabledata[i]["id"] == 27) {
+                //always show Medreleaf Midnight
+                tabledata[i]["inventoryExpiry"] = tday.addDays(20).toISOString().slice(0, 10);
+            }
+            //add fields to be displayed in the product talbe
+            d = dateDiffInDays(tday, new Date(tabledata[i]["inventoryExpiry"]));
+            t = d >= minDaysGreenInventory ? 2 : (d >= minDaysYellowInventory ? 1 : 0);
+            tabledata[i]["inventoryLevel"] = t;
+            tabledata[i]["inStock"] = "imgs/inventory" + t + ".png";
+            tabledata[i]["displayCost"] = tabledata[i]["unitPrice"] + "/" + tabledata[i]["units"];
+            //if CBD || THC is a range (e.g. 20-30) then trim the second number
+            s = tabledata[i]["cbd"];
+            if (typeof s == "string") { s = s.replace(/\-[\s\S]*/, ""); }
+            tabledata[i]["cbdProgress"] = s;
+            s = tabledata[i]["thc"];
+            if (typeof s == "string") { s = s.replace(/\-[\s\S]*/, ""); }
+            tabledata[i]["thcProgress"] = s;
+            tabledata[i]["lpDisplay"] = "<img src='imgs/logo" + tabledata[i]["lp"] + ".png'> " + tabledata[i]["lp"];
+        }
+
+        //Fake Product details (repalce with AJAX call)
+        var hcProductDetails = {
+            "id": 9,
+            "imgs": ["medreleaf-midnight.jpg", "medreleaf-midnight2.jpg", "medreleaf-midnight3.jpg", "medreleaf-midnight4.jpg", "medreleaf-midnight5.png"],
+            "orderUnits": "bottle (" + (Math.floor(Math.random() * 5) + 1) * 10 + "gm)",
+            "orderQty": Math.floor(Math.random() * 4) + 1,
+        }
+
+        //Fake reviews for all Products * all conditions
+        for (var i = 0; i < tabledata.length; i++) {
+            for (var j = 0; j < hcConfig.conditions.length; j++) {
+                s = hcConfig.conditions[j];
+                tabledata[i][s] = Math.floor(Math.random() * 100);
+            }
+        }
+
+
+        //Retrieve the value from a KV pair within the URL
+        function getURLParam(key) {
+            var url = new URL(window.location.href);
+            return val = url.searchParams.get(key);
+        }
+
+        //Adjudicate a claim
+        function abc_adjudicate(personID) {
+            var url = "https://secure.advcare.info/adj/v1/";
+            if (getURLParam("cors") == "local") { url = "https://cors-anywhere.herokuapp.com/" + url }
+            var myHeaders = new Headers();
+            myHeaders.append("Content-Type", "application/json");
+            var raw = JSON.stringify(personID);
+            var requestOptions = {
+                method: 'POST',
+                headers: myHeaders,
+                body: raw,
+                redirect: 'follow'
+            };
+            fetch(url, requestOptions)
+                .then(response => response.text())
+                .then(result => abc_adjudicateCB(result))
+                .catch(error => console.log('error', error));
+        }
+
+        //Adjudication callback
+        function abc_adjudicateCB(result) {
+            result = JSON.parse(result.substr(result.indexOf("{")));
+            console.log("Claim response", result)
+            var billed = result.data.BILLD * 1
+            var deducted = result.data.DEDT * 1
+            var copay = result.data.TOTAL * 1
+            var s = '<div style="text-align:left; font-size:10px; line-height:normal;">Primary carrier '+ claimObj.carrier +' pays '+ (billed/claimObj.billed*100);
+            s += '% ($'+ billed.toFixed(2) +') of $'+ claimObj.billed.toFixed(2) +'</br>';
+            s += 'Secondary carrier not utilized.</br>';
+            s += '&nbsp;&nbsp;&nbsp;$' + deducted.toFixed(2) + ' deducted (reimbursed to provider), copay $' + copay.toFixed(2) + '</br>';
+            s += 'Member to pay (copay + member reimbursment) $' + copay.toFixed(2) + '</br>';
+            s += '<div style="text-align:center;"><button id="hcPaymentProcessor" class="btn btn-default btn-round btn-sm" onclick="alert(\'Prescription processor: call out to Shopify for $' + copay.toFixed(2) + '\')">Prescription Processor ($<b>' + copay.toFixed(2) + ')</b></button></div>';
+            document.getElementById('hcAdjudicateResponse').innerHTML = s;
+        }
+
+        //Mock claim
+        var claimObj = {
+            "action": "submitclaim",
+            "tokenid": "Lk20Q521k02lfw7f0kd3fp2Ro53okf4D",
+            "user": "apptester",
+            "pass": "12345",
+            "phid": "0123213RT0034",
+            "phname": "FRESH CROP",
+            "dated": "9/29/2020",
+            "fname": "Eric",
+            "lname": "Sammer",
+            "addr1": "22 New Town Rd",
+            "addr2": "",
+            "city": "Markham",
+            "state": "ON",
+            "cntry": "CA",
+            "zip": "L3R3R3",
+            "ph": 9054785478,
+            "idno": "S2324231232123123",
+            "idtype": "DL",
+            "gender": "M",
+            "dob": "9/11/1946",
+            "medcon": "NONE",
+            "dfname": "David",
+            "dlname": "Hudson",
+            "dlic": 43843723,
+            "rxno": 699471,
+            "dinno": "0775456",
+            "qty": 30,
+            "unit": "TABLET",
+            "sig": "T 2 DB UD",
+            "phrid": 123321,
+            "cost": 50,
+            "markup": "0.00%",
+            "fee": 10,
+            "total": 61,
+            "billed": 61,
+            "carrier": "BLUERIBBON",
+            "carrierid": "D34323",
+            "planid": 145245,
+            "clientid": 123212,
+            "relation": 1,
+            "coverage": "PRIMARY"
+        }
+
+        //Add/replace values in the claim object
+        function setClaimObj(key, value) {
+            claimObj[key] = value;
+        }
+
+    </script>
+</head>
+
+<body onload="onLoadReady()" class="full-height">
+
+    <!-- demographics -->
+    <div class="card" style="margin-top: 0px; margin-bottom: 0px; background-color: #eee;">
+        <div class="card-body ">
+            <div class="row">
+                <div class="">
+                    <button class="" data-toggle="modal" data-target="#smallAlertModal"
+                        style="border-width: 0px; background-color: #eee;">
+                        <div class="author" style="background-color: #eee;">
+                            <img id="hc_photoSml" src="" class="avatar img-raised" style="width: 55px; height: 55px;">
+                            
+                        </div>
+                    </button>
+                    <!-- modal large photo -->
+                    <div class="modal fade" id="smallAlertModal" tabindex="-1" role="dialog">
+                        <div class="modal-dialog modal-small" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true"><i
+                                            class="material-icons">clear</i></button>
+                                </div>
+                                <div class="modal-body text-center">
+                                    <img id="hc_photoLrg" src="" class="avatar img-raised"
+                                        style="width: 250px; height: 250px;"></br>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- end modal -->
+                </div>
+                <div class="col-10">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="row">
+                                <div class="col"><span id="hc_name"></span></div>
+                                <div class="col-lg"><b>DOB:</b> <span id="hc_dob"></span></div>
+                                <div class="col"><b>Gender (at birth):</b> <span id="hc_gender"></span></div>
+                                <div class="col"><span id="hc_identifiesAsContainer"><b>Identifies as:</b> <span
+                                            id="hc_identifiesAs"></span></span></div>
+                                <div class="col-xl"><b>Weight:</b> <span id="hc_weight"></span></div>
+                                <div class="col"><b>Height:</b> <span id="hc_height"></span></div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="row">
+                                <div class="col"><span>
+                                        <i class="material-icons" style="  margin: 0;position: relative;top: 8px;">
+                                            healing</i>
+                                        <b>Conditions:</b> <span id="hc_conditions"></span>
+                                    </span></div>
+                                <div class="col-lg"><span>
+                                        <i class="material-icons" style="  margin: 0;position: relative;top: 8px;">
+                                            warning</i>
+                                        <b>Possible Contraindications:</b> <span id="hc_contraindications"></span>
+                                    </span>
+                                </div>
+                                
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <img src="material-kit/assets/gojitech_logo2.png" class="avatar img-raised" style="margin: 5px;width: 150px;background-color: #EEEEEE;box-shadow: none;">
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- filters -->
+    <div class="card" style="margin-top: 0px; margin-bottom: 0px;">
+        <div class="card-body " style="background-color: #ffffff;">
+            <div class="row">
+                <div class="col-sm-auto">
+                    <b>Rx:</b> <span id="hc_prescribingHCP" class="alert-doctor"></span> </br>
+                    &nbsp; <span id="hc_clinic" class="alert-doctor"></span>
+                </div>
+                <div class="col-lg-auto">
+                    <div class="row">
+                        <div class="col">
+                            <b>Strain:</b> <span id="hc_strain" class="alert-doctor"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-check form-check-inline" style="margin: 0px;">
+                                <label class="form-check-label" style="color: #000000; padding-left: 20px;">
+                                    <input class="form-check-input" type="checkbox" id="hc_strainIndica" value="Indica"
+                                        onchange="filterPL()">Indica&nbsp;&nbsp;
+                                    <span class="form-check-sign">
+                                        <span class="check"></span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline" style="margin: 0px;">
+                                <label class="form-check-label" style="color: #000000; padding-left: 20px;">
+                                    <input class="form-check-input" type="checkbox" id="hc_strainSativa" value="Sativa"
+                                        onchange="filterPL()">Sativa&nbsp;&nbsp;
+                                    <span class="form-check-sign">
+                                        <span class="check"></span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline" style="margin: 0px;">
+                                <label class="form-check-label" style="color: #000000; padding-left: 20px;">
+                                    <input class="form-check-input" type="checkbox" id="hc_strainHybrid" value="Hybrid"
+                                        onchange="filterPL()">Hybrid&nbsp;&nbsp;
+                                    <span class="form-check-sign">
+                                        <span class="check"></span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-auto">
+                    <div class="row">
+                        <div class="col">
+                            <b>CBD% &gt; </b> <span class="alert-doctor">(<span id="hc_cbdPercent"></span>%)</span>
+                            <input id="hc_sliderCBDVal" style="width:35px; height:25px;">%
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col" style="min-width: 200px;">
+                            <div id="hc_sliderCBDControl" class="slider"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-auto">
+                    <div class="row">
+                        <div class="col">
+                            <b>THC% &lt; </b> <span class="alert-doctor">(<span id="hc_thcPercent"></span>%)</span>
+                            <input id="hc_sliderTHCVal" style="width:35px; height:25px;">%
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col" style="min-width: 200px;">
+                            <div id="hc_sliderTHCControl" class="slider"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-auto">
+                    <div class="row">
+                        <div class="col">
+                            <b>Format:</b> <span id="hc_format" class="alert-doctor"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-check form-check-inline" style="margin: 0px;">
+                                <label class="form-check-label" style="color: #000000; padding-left: 20px;">
+                                    <input class="form-check-input" type="checkbox" id="hc_formatDried"
+                                        onchange="filterPL()" value="Dried">Dried&nbsp;&nbsp;
+                                    <span class="form-check-sign">
+                                        <span class="check"></span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline" style="margin: 0px;">
+                                <label class="form-check-label" style="color: #000000; padding-left: 20px;">
+                                    <input class="form-check-input" type="checkbox" id="hc_formatCapsule"
+                                        onchange="filterPL()" value="Capsule">Capsule&nbsp;&nbsp;
+                                    <span class="form-check-sign">
+                                        <span class="check"></span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline" style="margin: 0px;">
+                                <label class="form-check-label" style="color: #000000; padding-left: 20px;">
+                                    <input class="form-check-input" type="checkbox" id="hc_formatOil"
+                                        onchange="filterPL()" value="Oil">Oil&nbsp;&nbsp;
+                                    <span class="form-check-sign">
+                                        <span class="check"></span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline" style="margin: 0px;">
+                                <label class="form-check-label" style="color: #000000; padding-left: 20px;">
+                                    <input class="form-check-input" type="checkbox" id="hc_formatvape"
+                                        onchange="filterPL()" value="vape">Vape&nbsp;&nbsp;
+                                    <span class="form-check-sign">
+                                        <span class="check"></span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline" style="margin: 0px;">
+                                <label class="form-check-label" style="color: #000000; padding-left: 20px;">
+                                    <input class="form-check-input" type="checkbox" id="hc_formatEdible"
+                                        onchange="filterPL()" value="Edible">Edible&nbsp;&nbsp;
+                                    <span class="form-check-sign">
+                                        <span class="check"></span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-auto">
+                    <b>Quantity (daily):</b> <span id="hc_gramsPerDay" class="alert-doctor"></span> </br>
+                    <b>Duration (days):</b> <span id="hc_duration" class="alert-doctor"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- filters: advanced search -->
+    <div id="accordion" role="tablist" aria-multiselectable="true" class="card-collapse">
+        <div class="card card-plain" style="margin-top: 0px; margin-bottom: 0px;">
+            <div class="card-header" role="tab" id="headingOne" style="padding-top: 0px; margin-top: -20px;">
+                <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true"
+                    aria-controls="collapseOne" style="float: right; margin-top: 0px; font-size: smaller;">
+                    Advanced search
+                    <i class="material-icons" style="top:0px">keyboard_arrow_down</i>
+                </a>
+            </div>
+            <div id="collapseOne" class="collapse show" role="tabpanel" aria-labelledby="headingOne">
+                <div class="card-body" style="background-color: #fff;">
+                    <div class="row" style="margin-left: 15px;">
+                        <div class="col-sm-auto">
+                            <div class="btn-group">
+                                <button class="btn btn-info btn-sm dropdown-toggle" style="margin-top: -12px;"
+                                    type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span id="hcCondition1Label">Condition 1</span>
+                                </button>
+                                <div class="dropdown-menu" id="hcConditions1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-auto">
+                            <div class="btn-group">
+                                <button class="btn btn-info btn-sm dropdown-toggle" style="margin-top: -12px;"
+                                    type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span id="hcCondition2Label">Condition 2</span>
+                                </button>
+                                <div class="dropdown-menu" id="hcConditions2">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-auto">
+                            <div class="form-check form-check-inline" style="margin: 0px;">
+                                <label class="form-check-label" style="color: #000000; padding-left: 20px;">
+                                    <input class="form-check-input" type="checkbox" id="hc_inStockOnly"
+                                        onchange="filterPL()" checked value="inStock">in-stock only
+                                    <span class="form-check-sign">
+                                        <span class="check"></span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-sm-auto">
+                            <button class="btn btn-default btn-round btn-sm"
+                                style="padding-top: 3px; padding-bottom: 3px; margin-top: 0px;"
+                                onclick="filterPLClear()">Show all</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- product details, Order Hx, Payments -->
+    <div id="hc_productListContainer" class="container-fluid fill-height"
+        style="margin-top: 5px; margin-bottom: 0px; margin-left: -10px;">
+        <div class="row">
+            <div class="col-lg-8" style="padding-right: 0px;">
+                <div id="hc_productList"></div>
+            </div>
+            <div class="col-lg-4" style="padding-left: 10px; padding-right: 0px;">
+                <div id="hc_productDetails">
+                    <ul class="nav nav-tabs" id="myTab" role="tablist" style="background-color: #80a0ff; padding:0px;">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="details-tab" data-toggle="tab" href="#details" role="tab"
+                                aria-controls="details" aria-selected="true">Details</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="rxhx-tab" data-toggle="tab" href="#rxhx" role="tab"
+                                aria-controls="rxhx" aria-selected="false">Rx Hx</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="rxhx-tab" data-toggle="tab" href="#prescribe" role="tab"
+                                aria-controls="prescribe" aria-selected="false">Rx Prescription</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="details" role="tabpanel"
+                            aria-labelledby="details-tab"><i>Select a product</i></div>
+                        <div class="tab-pane fade" id="rxhx" role="tabpanel" aria-labelledby="rxhx-tab">
+                            </br>
+                            <div class=col-md-12>
+                                <div class=card>
+                                    <div class=card-header style="padding: 5px 10px 5px 10px;">
+                                        <h4 class=card-title
+                                            style="margin-top: 0px; font-family: Arial, Helvetica, sans-serif;">Order
+                                            History</h4>
+                                    </div>
+                                    <div class=card-body>
+                                        <div class=table-responsive id="hcOrderHx"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="prescribe" role="tabpanel" aria-labelledby="prescribe-tab">
+                            <i>Select a product and <b>add</b> it</i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Populate fields -->
+    <script>
+        // Get the current date and format it
+        var today = new Date();
+        var day = String(today.getDate()).padStart(2, '0');
+        var month = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+        var year = today.getFullYear();
+        var currentDate = year + '-' + month + '-' + day;
+        // Format the date as dd/mm/yyyy
+
+    </script>
+
+
+
+    <script>
+        var tablePL;    //Define at a global scope - so that the table can be referenced anywhere
+
+        function hc_populate(fld, val) {
+            document.getElementById(fld).innerHTML = val;
+        }
+        hc_populate("hc_name", hcData.Demographics.lastName + ", " + hcData.Demographics.firstName);
+        hc_populate("hc_dob", hcData.Demographics.dob);
+        hc_populate("hc_gender", hcData.Demographics.gender);
+        hc_populate("hc_identifiesAs", hcData.Demographics.identifiesAs);
+        hc_populate("hc_height", hcData.Demographics.height);
+        hc_populate("hc_weight", hcData.Demographics.weight);
+        hc_populate("hc_conditions", hcData.Demographics.conditions);
+        hc_populate("hc_contraindications", hcData.Demographics.contraindications);
+        document.getElementById("hc_photoSml").src = hcData.Demographics.photo;
+        document.getElementById("goji_photoSml").src = goji_info.photo;
+        document.getElementById("hc_photoLrg").src = hcData.Demographics.photo;
+        hc_populate("hc_prescribingHCP", hcData.Clinical.prescribingHCP);
+        hc_populate("hc_clinic", hcData.Clinical.clinic);
+        hc_populate("hc_strain", (hcData.Clinical.prescriptions.strain).toString().replace(/,/gi, ", "));
+        hc_populate("hc_cbdPercent", hcData.Clinical.prescriptions.cbdPercent);
+        hc_populate("hc_thcPercent", hcData.Clinical.prescriptions.thcPercent);
+        hc_populate("hc_format", hcData.Clinical.prescriptions.format.toString().replace(/,/gi, ", "));
+        hc_populate("hc_gramsPerDay", hcData.Clinical.prescriptions.gramsPerDay);
+        hc_populate("hc_duration", hcData.Clinical.prescriptions.duration);
+ 
+        if (hcData.Demographics.gender == hcData.Demographics.identifiesAs) {
+            document.getElementById("hc_identifiesAsContainer").style = "width: 0px; height: 0px; display:inline-block; overflow: hidden";
+        }
+        (hcData.Clinical.prescriptions.strain).forEach(function (item) {
+            if (item == "Indica") { document.getElementById("hc_strainIndica").checked = true; }
+            if (item == "Sativa") { document.getElementById("hc_strainSativa").checked = true; }
+            if (item == "Hybrid") { document.getElementById("hc_strainHybrid").checked = true; }
+        });
+        (hcData.Clinical.prescriptions.format).forEach(function (item) {
+            if (item == "dried") { document.getElementById("hc_formatDried").checked = true; }
+            if (item == "capsule") { document.getElementById("hc_formatCapsule").checked = true; }
+            if (item == "oil") { document.getElementById("hc_formatOil").checked = true; }
+            if (item == "edible") { document.getElementById("hc_formatEdible").checked = true; }
+            if (item == "vape") { document.getElementById("hc_formatvape").checked = true; }
+        });
+
+        //Some features are not available until all the libraries have loaded
+        function onLoadReady() {
+
+            //CBD Slider
+            var hc_sliderCBD = document.getElementById('hc_sliderCBDControl');
+            noUiSlider.create(hc_sliderCBD, {
+                start: 0,
+                connect: [false, true],
+                step: 5,
+                range: {
+                    min: 0,
+                    max: 100
+                }
+            });
+            hc_sliderCBD.noUiSlider.set(hcData.Clinical.prescriptions.cbdPercent);
+            var hc_sliderCBDVal = document.getElementById('hc_sliderCBDVal');
+            hc_sliderCBD.noUiSlider.on('update', function (values, handle) {
+                hc_sliderCBDVal.value = values[handle] * 1;
+                filterPL();
+            });
+            hc_sliderCBDVal.addEventListener('change', function () {
+                hc_sliderCBD.noUiSlider.set(this.value);
+                filterPL();
+            });
+
+            //THC Slider
+            var hc_sliderTHC = document.getElementById('hc_sliderTHCControl');
+            noUiSlider.create(hc_sliderTHC, {
+                start: 0,
+                connect: [true, false],
+                step: 5,
+                range: {
+                    min: 0,
+                    max: 100
+                }
+            });
+            hc_sliderTHC.noUiSlider.set(hcData.Clinical.prescriptions.thcPercent);
+            var hc_sliderTHCVal = document.getElementById('hc_sliderTHCVal');
+            hc_sliderTHC.noUiSlider.on('update', function (values, handle) {
+                hc_sliderTHCVal.value = values[handle] * 1;
+                filterPL();
+            });
+            hc_sliderTHCVal.addEventListener('change', function () {
+                hc_sliderTHC.noUiSlider.set(this.value);
+                filterPL();
+            });
+
+            //Condition/symptom dropdown boxes
+            var s = "";
+            hcConfig.conditions.forEach(el => { s += '<a class="dropdown-item" onclick="hcConditionSelect(\'' + el + '\',1)">' + el + '</a>'; });
+            document.getElementById("hcConditions1").innerHTML = s;
+            s = "";
+            hcConfig.conditions.forEach(el => { s += '<a class="dropdown-item" onclick="hcConditionSelect(\'' + el + '\',2)">' + el + '</a>'; });
+            document.getElementById("hcConditions2").innerHTML = s;
+
+            //Order history
+            var s = '<table class="table"><thead class="text-primary">';
+            s += '<th style="font-weight:bold">Product</th><th style="font-weight:bold">Date</th><th class="text-right" style="font-weight:bold">Amount</th></thead><tbody>';
+            for (var i = hcData.orderHx.length - 1; i >= 0; i--) {
+                s += '<tr>';
+                s += '<td style="padding: 4px 6px">' + hcData.orderHx[i].product + '</td>';
+                s += '<td style="padding: 4px 6px">' + hcData.orderHx[i].orderDate + '</td>';
+                // s += '<td>' + hcData.orderHx[i].instructions + '</td>';
+                s += '<td class="text-right" style="padding: 4px 6px">' + hcData.orderHx[i].cost + '</td>';
+                s += '</tr>';
+            }
+            s += '</tbody></table>';
+            document.getElementById("hcOrderHx").innerHTML = s;
+
+            //Product table
+            tablePL = new Tabulator("#hc_productList", {
+                height: document.getElementById("hc_productListContainer").clientHeight, // Set height same as container. set height of table (in CSS or here), this enables the Virtual DOM and improves render speed dramatically (can be any valid css height value)
+                layout: "fitColumns", //fit columns to width of table (optional)
+                data: tabledata,
+                // autoColumns: true,
+                columns: [ //Define Table Columns
+                    { title: "Name", field: "name", width: 150 },
+                    { title: "LP", field: "lpDisplay", align: "left", formatter: "html" },
+                    { title: "Strain", field: "strain", align: "left", width: 80 },
+                    { title: "CBD", field: "cbdProgress", formatter: "progress", formatterParams: { legend: true, max: maxCBD, color: "#00a060" } },
+                    { title: "THC", field: "thcProgress", formatter: "progress", formatterParams: { legend: true, max: maxTHC } },
+                    { title: "Format", field: "format", width: 80 },
+                    { title: "Primary Terepen", field: "terepen" },
+                    { title: "Rating", field: "rating", formatter: "star", width: 90 },
+                    { title: "In-stock", field: "inStock", width: 90, formatter: "image", formatterParams: { height: 25, width: 15 }, align: "center" },
+                    { title: "Price", field: "displayCost", sorter: "date", align: "center" },
+                ],
+                initialSort: [
+                    //documentation is backwards. In reality the primary sort is last in this list. (First in list is the inner-most sort)
+                    { column: "inStock", dir: "desc" },
+                    { column: "lpDisplay", dir: "asc" },
+                ],
+                rowClick: function (e, row) {
+                    rowSelectedPL(row.getData().id);
+                },
+            });
+
+            //Apply initial filters to the Product List table
+            setTimeout(() => { filterPL(); }, 500);
+
+            //Flicker problem
+            //**********************************************************************************************************************************
+            //**********************************************************************************************************************************
+            //**********************************************************************************************************************************
+            //Set Browser window to ~ 1111 x 1735 pixels (https://www.whatismybrowser.com/), click Show All (under advanced search)
+            setTimeout(() => {
+                // console.log("hi")
+                document.getElementsByClassName("tabulator-tableHolder")[0].style.overflowY = "visible";
+                document.getElementsByClassName("tabulator-tableHolder")[0].style.overflowX = "hidden";
+            }, 1000);
+
+            //Display tab Order History
+            $('.nav-tabs a[href="#rxhx"]').tab('show');
+
+            //Collapse the accordian (Advanced Filters)
+            $('#collapseOne').collapse("hide");
+        };
+    </script>
+
+    <!-- Site functions -->
+    <script>
+        //Apply filters to ProductList
+        function filterPL() {
+            var s = [];
+            var f = [];
+            if (document.getElementById("hc_strainIndica").checked) { s.push("Indica"); }
+            if (document.getElementById("hc_strainSativa").checked) { s.push("Sativa"); }
+            if (document.getElementById("hc_strainHybrid").checked) { s.push("Hybrid"); }
+            if (document.getElementById("hc_formatDried").checked) { f.push("dried"); }
+            if (document.getElementById("hc_formatCapsule").checked) { f.push("capsule"); }
+            if (document.getElementById("hc_formatOil").checked) { f.push("oil"); }
+            if (document.getElementById("hc_formatvape").checked) { f.push("vape"); }
+            if (document.getElementById("hc_formatEdible").checked) { f.push("edible"); }
+            if (typeof tablePL != "undefined") {    //Don't filter the table if it hasn't been constructed yet
+                tablePL.setFilter([
+                    { field: "strain", type: "in", value: s },
+                    { field: "format", type: "in", value: f },
+                    { field: "thcProgress", type: "<=", value: (document.getElementById('hc_sliderTHCVal').value * 1) },
+                    { field: "cbdProgress", type: ">=", value: (document.getElementById('hc_sliderCBDVal').value * 1) },
+                    { field: "inventoryLevel", type: ">=", value: (document.getElementById("hc_inStockOnly").checked * 1) },
+                ])
+            }
+        }
+
+        //Clear all filters from ProductList
+        function filterPLClear() {
+            document.getElementById("hc_strainIndica").checked = true;
+            document.getElementById("hc_strainSativa").checked = true;
+            document.getElementById("hc_strainHybrid").checked = true;
+            document.getElementById("hc_formatDried").checked = true;
+            document.getElementById("hc_formatCapsule").checked = true;
+            document.getElementById("hc_formatOil").checked = true;
+            document.getElementById("hc_formatvape").checked = true;
+            document.getElementById("hc_formatEdible").checked = true;
+            document.getElementById("hc_inStockOnly").checked = false;
+            document.getElementById('hc_sliderTHCVal').value = "100";
+            document.getElementById('hc_sliderCBDVal').value = "0";
+            document.getElementById('hc_sliderTHCControl').noUiSlider.set([100]);
+            document.getElementById('hc_sliderCBDControl').noUiSlider.set([0]);
+            filterPL();
+        }
+
+        //A condition has been selected from Advanced Search. Add the condition column to the table and sort by it
+        var hcCond = ["", ""];
+        function hcConditionSelect(condition, list) {
+            document.getElementById("hcCondition" + list + "Label").innerHTML = condition;
+            list--;
+            if (hcCond[list] != "") {
+                //column already exists, therefore update it (delete and recreate)
+                tablePL.deleteColumn(hcCond[list]);
+            }
+            tablePL.addColumn({ title: condition, field: condition, formatter: "progress", formatterParams: { legend: true, max: 100, color: "#00bcd4" } }, false);
+            hcCond[list] = condition;
+        }
+
+        //When a row is clicked in the Product List table --> Set the tab to 'Details' and update the details content
+        function rowSelectedPL(rowID) {
+            var t = "";
+            for (var i = 0; i < tabledata.length; i++) { if (tabledata[i].id == rowID) { t = tabledata[i]; break; } }
+            var s = '';
+            //Row: "Add [#] units to prescription (Add)"
+            s += '<div id="hcSelectQty" style="margin-top:10px; margin-bottom:10px; padding:5px; background-color:#dcdcdc; text-align:center;">Add to prescription: ';
+            s += '<input type="text" id="hcAddQty" value="' + hcProductDetails.orderQty + '" style="width:40px; text-align:right; padding: 0px 5px;"> ' + hcProductDetails.orderUnits + ' ';
+            s += '<button class="btn btn-default btn-round btn-sm" onclick="addToOrder(' + rowID + ')">Add</button></div>';
+            //Image carousel
+            s += '<div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel"><ol class="carousel-indicators">';
+            for (var i = 0; i < hcProductDetails.imgs.length; i++) {
+                s += '<li data-target="#carouselExampleIndicators" data-slide-to="' + i + '"' + (i == 0 ? ' class="active"' : '') + '></li>';
+            }
+            s += '</ol><div class="carousel-inner">';
+            for (var i = 0; i < hcProductDetails.imgs.length; i++) {
+                s += '<div class="carousel-item' + (i == 0 ? ' active' : '') + '">';
+                s += '<img class="d-block w-100" src="imgs/' + hcProductDetails.imgs[i] + '" alt="Slide #' + i + '"></div>';
+            }
+            s += '</div><a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev"><span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="sr-only">Previous</span></a>';
+            s += '<a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next"><span class="carousel-control-next-icon" aria-hidden="true"></span><span class="sr-only">Next</span></a></div>';
+
+            //INTERIM DISPLAY (show all product attributes)...
+            s += "</br></br><i>Product attributes (to be substituted with client CSS):</i></br><b>Row ID: </b>" + rowID + "</br>";
+            for (var key in t) { s += "<b>" + key + ": </b>" + t[key] + "</br>"; }
+            //...interim display
+            document.getElementById('details').innerHTML = s;
+            $('.nav-tabs a[href="#details"]').tab('show');  //Set the Details tab as active
+            $('.carousel').carousel({ interval: 5000 });    //Initiate the carousel
+        }
+
+        //When a product has been selected, and then the order quantity has been 'Add'ed, set the Prescription tab as active and add the product + qty to the prescription
+        var hcOrderCart = [];
+        function addToOrder(prodID, qty) {
+            var t = "";
+            var cartItems = hcOrderCart.length;
+            var amt = 0;
+            if (typeof qty == "undefined") { qty = document.getElementById("hcAddQty").value; }
+            for (var i = 0; i < tabledata.length; i++) { if (tabledata[i].id == prodID) { t = tabledata[i]; break; } }
+            hcOrderCart[cartItems] = [];
+            hcOrderCart[cartItems][0] = prodID;
+            hcOrderCart[cartItems][1] = t["name"];
+            hcOrderCart[cartItems][2] = qty;
+            
+            //Cart table
+            var s = "<Table class='table'><thead class='text-secondary'><td style='font-weight:bold; padding:4px'>Product</td><td style='font-weight:bold; padding:4px'>Qty</td></thead><tbody>";
+            for (var i = 0; i < hcOrderCart.length; i++) {
+                s += "<tr><td style='padding:4px 8px'>" + hcOrderCart[i][1] + "</td>";
+                s += "<td style='padding:4px 8px'>" + hcOrderCart[i][2] + "</td>";
+                
+                amt += hcOrderCart[i][2] * hcOrderCart[i][3];
+            }
+            
+            s += "</tbody></table>";
+            //Primary & Secondary claims card
+            s += '<div id="hcPlanCardPrimary" style="margin-top:10px; margin-bottom:10px; padding:5px; background-color:#dcdcdc; text-align:center; border-radius: 20px">';
+            s += "<div style='display: flex; justify-content: space-between;'><span><b>Rx: </b>"+ hcData.Clinical.prescribingHCP + "</span> <span><b>Written Date: </b> " +  currentDate +"</span></div>";
+            s += "<div style='display: flex; justify-content: space-between;'> <span><b>Patient: </b> " +  hcData.Demographics.lastName + ", " + hcData.Demographics.firstName +"</span></div>";
+            s += "<div style='display: flex; justify-content: space-between;'><span><b>Address: </b> 171 Hendon Ave - ON - 2M2 7A9</span> <span><b>Phone: </b> (438) 521-2306 </span></div>";
+            
+            s += '</br><div style="display: flex; justify-content: space-between;">' +
+                '<div style="flex: 0 0 48%;">' + 
+                '<b><label for="start-date" style="color: black;">Start Date:&nbsp;&nbsp;</label></b>' + 
+                '<input type="date" id="start-date" value="2024-02-18" style="border-radius: 10px">' + 
+                '</div>' + 
+                '<div style="flex: 0 0 48%;">' + 
+                '<label for="end-date" style="color: black;">End Date:&nbsp;&nbsp;</label>' + 
+                '<input type="date" id="end-date" value="2025-06-14" style="border-radius: 10px">' +  
+                '</div>' + 
+                '</div>';
+            
+
+
+            s += "</br><div style='text-align: left;'><b>Health Insurance: 2345-6549 </b></div>";
+
+            s += "</br><div style='text-align: left;'><b>Instructions: </b></div>";
+            s += "<div style='text-align: left;'><textarea name='Text1' cols='50' rows='2' placeholder='Doctor’s Instructions' style='border-radius: 10px'></textarea></div>";
+            
+            s += "</br><div style='text-align: left;'><b>Notes: </b></div>";
+            s += "<div style='text-align: left;'><textarea name='Text1' cols='50' rows='3' placeholder='Doctor’s Notes' style='border-radius: 10px'></textarea></div>";
+
+            s += "</br><div style='text-align: left;'><b>Doctor Signature: </b></div>";
+            s += "<div style='text-align: left;'><textarea name='Text1' cols='50' rows='1' placeholder='Signature here' style='border-radius: 10px'></textarea></div>";
+
+            //Adjudicate button & adjudicate accordian
+            s += '<div id="hcAdjudicateAccordian" class="card-collapse">';
+            s += '<a data-toggle="collapse" data-parent="#hcAdjudicateAccordian" href="#collapseAdjudicate" aria-expanded="true" aria-controls="collapseAdjudicate">';
+            s += '</br><button id="hcAdjudicateBtn" class="btn btn-default btn-round btn-sm" onclick="hcAdjudicate()">Submit</button></a>';
+            s += '<button id="hcAdjudicateBtn" class="btn btn-default btn-round btn-sm" onclick="hcAdjudicate()">Print</button></a>';
+            s += '<div id="collapseAdjudicate" class="collapse">';
+            s += '<div id="hcAdjudicateResponse" class="card-body" style="border: 1px solid #808080; border-radius: 5px; margin-top:10px;">';
+            s += 'Submitting ...</br><img src="imgs/spinner3.gif" height=27 width=48></br>';
+            s += '</div></div></div>';
+            s += '</div>';
+            document.getElementById('prescribe').innerHTML = s;
+            $('.nav-tabs a[href="#prescribe"]').tab('show');  //Set the Prescription tab as active
+        }
+        //Adjudicate
+        function hcAdjudicate() {
+
+            //Set some claim values
+            var dispenseFee = 10;
+            setClaimObj("fname", hcData.Demographics.firstName);
+            setClaimObj("lname", hcData.Demographics.lastName);
+            setClaimObj("planid", document.getElementById('hcPlanCardPrimaryGroup').value);
+            setClaimObj("clientid", document.getElementById('hcPlanCardPrimaryMember').value);
+            setClaimObj("cost", document.getElementById('hcAdjudicateAmt').innerHTML.substr(1) * 1);
+            setClaimObj("fee", dispenseFee);
+            setClaimObj("total", claimObj.cost + dispenseFee);
+            setClaimObj("billed", claimObj.total);
+
+            console.log("Claim submitted", claimObj);
+
+            $("#hcPlanCardPrimaryGroup").prop("disabled", true);
+            $("#hcPlanCardPrimaryMember").prop("disabled", true);
+            $("#hcPlanCardSecondaryGroup").prop("disabled", true);
+            $("#hcPlanCardSecondaryMember").prop("disabled", true);
+            $("#hcAdjudicateBtn").prop("disabled", true);
+
+            //Mock adjudication
+            /* setTimeout(function () {
+                //Simulate callback from adjudication
+                var amt = document.getElementById('hcAdjudicateAmt').innerHTML.substr(1) * 1;
+                var deduct = Math.min(76.34, amt);
+                var member = deduct;
+                amt = Math.max(0, amt - deduct);
+                var s = '<div style="text-align:left; font-size:10px; line-height:normal;">Sunlife pays 100% of HSA, $76.34 remaining</br>';
+                s += '&nbsp;&nbsp;&nbsp;$' + deduct.toFixed(2) + ' deducted (reimbursed to member), copay $' + amt.toFixed(2) + '</br>';
+                s += 'Greenshield pays 80%, up to $500/3mos, $500 remaining</br>';
+                deduct = Math.min(500, amt) * .8;
+                amt = Math.max(0, amt - deduct);
+                member += amt;
+                s += '&nbsp;&nbsp;&nbsp;$' + deduct.toFixed(2) + ' deducted (reimbursed to provider), copay $' + amt.toFixed(2) + '</br>';
+                s += 'Member to pay (copay + member reimbursment) $' + member.toFixed(2) + '</br>';
+                s += '<div style="text-align:center;"><button id="hcPaymentProcessor" class="btn btn-default btn-round btn-sm" onclick="alert(\'Payment processor: collect member pays and complete adjudication tx\')">Payment Processor ($<b>' + member.toFixed(2) + ')</b></button></div>';
+                document.getElementById('hcAdjudicateResponse').innerHTML = s;
+            }, 3000);   */
+            //Real adjudication
+            abc_adjudicate(claimObj);
+        }
+    </script>
+
+    <!--   Core JS Files   -->
+    <script src="material-kit/assets/js/core/jquery.min.js" type="text/javascript"></script>
+    <script src="material-kit/assets/js/core/popper.min.js" type="text/javascript"></script>
+    <script src="material-kit/assets/js/core/bootstrap-material-design.min.js" type="text/javascript"></script>
+    <script src="material-kit/assets/js/plugins/moment.min.js"></script>
+    <!--	Plugin for the Datepicker, full documentation here: https://github.com/Eonasdan/bootstrap-datetimepicker -->
+    <script src="material-kit/assets/js/plugins/bootstrap-datetimepicker.js" type="text/javascript"></script>
+    <!--  Plugin for the Sliders, full documentation here: http://refreshless.com/nouislider/ -->
+    <script src="material-kit/assets/js/plugins/nouislider.min.js" type="text/javascript"></script>
+    <!--  Google Maps Plugin  -->
+    <!-- <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY_HERE"></script> -->
+    <!--	Plugin for Tags, full documentation here: https://github.com/bootstrap-tagsinput/bootstrap-tagsinputs  -->
+    <script src="material-kit/assets/js/plugins/bootstrap-tagsinput.js"></script>
+    <!--	Plugin for Select, full documentation here: http://silviomoreto.github.io/bootstrap-select -->
+    <script src="material-kit/assets/js/plugins/bootstrap-selectpicker.js" type="text/javascript"></script>
+    <!--	Plugin for Fileupload, full documentation here: http://www.jasny.net/bootstrap/javascript/#fileinput -->
+    <script src="material-kit/assets/js/plugins/jasny-bootstrap.min.js" type="text/javascript"></script>
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <!-- Control Center for Material Kit: parallax effects, scripts for the example pages etc -->
+    <script src="material-kit/assets/js/material-kit.js?v=2.2.0" type="text/javascript"></script>
+    <!-- Tabulator -->
+    <!-- Run locally -->
+    <link href="tabulator-master/dist/css/tabulator.min.css" rel="stylesheet">
+    <script type="text/javascript" src="tabulator-master/dist/js/tabulator.min.js"></script>
+    <!-- Run via CDN -->
+    <!-- <link href="https://unpkg.com/tabulator-tables@4.5.2/dist/css/tabulator.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@4.5.2/dist/js/tabulator.min.js"></script> -->
+</body>
+
+</html>
